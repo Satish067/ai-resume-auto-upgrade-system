@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/resume")
@@ -24,32 +26,66 @@ public class ResumeController {
     private final ResumeOrchestratorService orchestrator;
 
 
-    public ResponseEntity<?> uploadResume(@RequestParam("file")MultipartFile file) throws Exception{
-    String extractedText = parserService.extractText(file);
-    ResumeSectionsDTO sections = aiService.extractSections(extractedText);
-
-    return ResponseEntity.ok(sections);
+    @PostMapping(value = "/sections", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResumeSectionsDTO> extractAllSections(@RequestParam("file") MultipartFile file) throws Exception {
+        String extractedText = parserService.extractText(file);
+        ResumeSectionsDTO sections = aiService.extractSections(extractedText);
+        return ResponseEntity.ok(sections);
     }
-    @PostMapping("/ats-score")
-    public ResponseEntity<?> getAtsScore(@RequestParam("file")MultipartFile file) throws Exception {
-    String resumeText = parserService.extractText(file);
-    AtsScoreDTO score = aiService.calculateAtsScore(resumeText, "Java Developer");
-
-    return ResponseEntity.ok(score);
-    }
-
-    @PostMapping("/upgrade/pdf")
-    public ResponseEntity<byte[]> generateUpgradedResumePdf(@RequestParam("file")MultipartFile file) throws Exception {
-
+    @PostMapping(value = "/ats-score", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> getAtsScore(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "Software Developer") String role) throws Exception {
         String resumeText = parserService.extractText(file);
-        AtsScoreDTO atsScore = aiService.calculateAtsScore(resumeText, "Java Developer");
-        UpgradedResumeDTO upgradedResume = aiService.upgradeResume(resumeText, atsScore.getMissingKeywords(), "Java Developer");
-        byte[] pdfBytes = pdfService.generateResumePdf(upgradedResume);
+        AtsScoreDTO score = aiService.calculateAtsScore(resumeText, role);
+        return ResponseEntity.ok(score);
+    }
 
+    @PostMapping(value = "/upgrade/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<byte[]> generateUpgradedResumePdf(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "Software Developer") String role) throws Exception {
+        String resumeText = parserService.extractText(file);
+        AtsScoreDTO atsScore = aiService.calculateAtsScore(resumeText, role);
+        UpgradedResumeDTO upgradedResume = aiService.upgradeResume(resumeText, atsScore.getMissingKeywords(), role);
+        byte[] pdfBytes = pdfService.generateResumePdf(upgradedResume);
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=upgraded_resume.pdf")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=upgraded_resume_" + System.currentTimeMillis() + ".pdf")
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                .header(HttpHeaders.PRAGMA, "no-cache")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
+    }
+
+    @PostMapping(value = "/upgrade", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResumeUpgradeResponseDTO> upgradeResume(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "Software Developer") String role) throws Exception {
+        String resumeText = parserService.extractText(file);
+        AtsScoreDTO atsScore = aiService.calculateAtsScore(resumeText, role);
+        UpgradedResumeDTO upgradedResume = aiService.upgradeResume(resumeText, atsScore.getMissingKeywords(), role);
+        byte[] pdfBytes = pdfService.generateResumePdf(upgradedResume);
+        String pdfBase64 = java.util.Base64.getEncoder().encodeToString(pdfBytes);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                .body(new ResumeUpgradeResponseDTO(pdfBase64, atsScore));
+    }
+
+    @PostMapping(value = "/upgrade/with-keywords", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResumeUpgradeResponseDTO> upgradeResumeWithKeywords(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "Software Developer") String role,
+            @RequestParam String keywords) throws Exception {
+        List<String> keywordList = java.util.Arrays.stream(keywords.split(","))
+                .map(String::trim).filter(k -> !k.isBlank()).toList();
+        String resumeText = parserService.extractText(file);
+        AtsScoreDTO atsScore = aiService.calculateAtsScore(resumeText, role);
+        UpgradedResumeDTO upgradedResume = aiService.upgradeResume(resumeText, keywordList, role);
+        byte[] pdfBytes = pdfService.generateResumePdf(upgradedResume);
+        String pdfBase64 = java.util.Base64.getEncoder().encodeToString(pdfBytes);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                .body(new ResumeUpgradeResponseDTO(pdfBase64, atsScore));
     }
     @GetMapping("/ping")
     public String ping() {

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Resume Upgrader</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(30, 64, 103, 0.12);
+      padding: 48px 52px;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      background: #1e4067;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-icon svg { width: 24px; height: 24px; fill: white; }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1e4067;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 36px;
+      margin-top: 4px;
+    }
+
+    .drop-zone {
+      border: 2px dashed #c5d5e8;
+      border-radius: 12px;
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #f8fafc;
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #1e4067;
+      background: #eef4fb;
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
+      background: #e0ebf5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drop-icon svg { width: 24px; height: 24px; stroke: #1e4067; fill: none; }
+
+    .drop-text {
+      font-size: 15px;
+      color: #374151;
+      font-weight: 500;
+    }
+
+    .drop-hint {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    .role-select-wrap {
+      margin-top: 16px;
+    }
+
+    .role-select-wrap label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .role-select-wrap select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #c5d5e8;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #1e4067;
+      background: #f8fafc;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231e4067' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .role-select-wrap select:focus {
+      border-color: #1e4067;
+    }
+
+    .file-selected {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: #eef4fb;
+      border: 1px solid #c5d5e8;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 14px;
+    }
+
+    .file-selected svg { width: 20px; height: 20px; stroke: #1e4067; fill: none; flex-shrink: 0; }
+
+    .file-name {
+      font-size: 13px;
+      color: #1e4067;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px;
+      background: #1e4067;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn:hover:not(:disabled) { background: #163352; transform: translateY(-1px); }
+    .btn:disabled { background: #93afc8; cursor: not-allowed; transform: none; }
+
+    .spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status {
+      margin-top: 20px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status.loading {
+      display: flex;
+      background: #eef4fb;
+      color: #1e4067;
+    }
+
+    .status.success {
+      display: flex;
+      background: #ecfdf5;
+      color: #065f46;
+    }
+
+    .status.error {
+      display: flex;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    .status svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    .ats-card {
+      display: none;
+      margin-top: 24px;
+      border: 1px solid #c5d5e8;
+      border-radius: 12px;
+      padding: 20px 24px;
+      background: #f8fafc;
+    }
+
+    .ats-card.visible { display: block; }
+
+    .ats-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .ats-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .ats-score-badge {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1e4067;
+    }
+
+    .ats-score-badge span {
+      font-size: 14px;
+      font-weight: 400;
+      color: #9ca3af;
+    }
+
+    .ats-bar-bg {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .ats-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: #1e4067;
+      transition: width 1s ease;
+    }
+
+    .ats-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .ats-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .ats-tag {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: #fee2e2;
+      color: #991b1b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.15s;
+    }
+
+    .ats-tag:hover { background: #fecaca; }
+    .ats-tag.selected { background: #1e4067; color: white; }
+    .ats-tag.selected:hover { background: #163352; }
+
+    .ats-tag-remove { font-size: 14px; line-height: 1; }
+
+    .keyword-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .keyword-input-row input {
+      flex: 1;
+      padding: 7px 12px;
+      border: 1.5px solid #c5d5e8;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      color: #1e4067;
+    }
+
+    .keyword-input-row input:focus { border-color: #1e4067; }
+
+    .keyword-input-row button {
+      padding: 7px 14px;
+      background: #1e4067;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .keyword-input-row button:hover { background: #163352; }
+
+    .btn-regenerate {
+      width: 100%;
+      margin-top: 14px;
+      padding: 12px;
+      background: white;
+      color: #1e4067;
+      font-size: 15px;
+      font-weight: 600;
+      border: 2px solid #1e4067;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-regenerate:hover:not(:disabled) { background: #eef4fb; }
+    .btn-regenerate:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .ats-suggestions { list-style: none; padding: 0; margin: 0; }
+    .ats-suggestions li {
+      font-size: 13px;
+      color: #374151;
+      padding: 4px 0;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      gap: 8px;
+    }
+    .ats-suggestions li::before { content: "→"; color: #1e4067; flex-shrink: 0; }
+
+    .steps {
+      display: none;
+      margin-top: 20px;
+      gap: 8px;
+      flex-direction: column;
+    }
+
+    .steps.visible { display: flex; }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .step.active { color: #1e4067; font-weight: 500; }
+    .step.done { color: #065f46; }
+
+    .step-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d1d5db;
+      flex-shrink: 0;
+    }
+
+    .step.active .step-dot { background: #1e4067; }
+    .step.done .step-dot { background: #10b981; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <h1>AI Resume Upgrader</h1>
+    </div>
+    <p class="subtitle">Upload your resume and get an ATS-optimized, upgraded PDF instantly.</p>
+
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".pdf,.doc,.docx" />
+      <div class="drop-icon">
+        <svg viewBox="0 0 24 24" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+      </div>
+      <p class="drop-text">Drag & drop your resume here</p>
+      <p class="drop-hint">or click to browse — PDF, DOC, DOCX supported</p>
+    </div>
+
+    <div class="file-selected" id="fileSelected">
+      <svg viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span class="file-name" id="fileName"></span>
+    </div>
+
+    <div class="role-select-wrap">
+      <label for="roleSelect">Target Role</label>
+      <select id="roleSelect">
+        <option value="Java Developer">Java Developer</option>
+        <option value="Python Developer">Python Developer</option>
+        <option value="JavaScript Developer">JavaScript Developer</option>
+        <option value="TypeScript Developer">TypeScript Developer</option>
+        <option value="Full Stack Developer">Full Stack Developer</option>
+        <option value="Frontend Developer">Frontend Developer</option>
+        <option value="Backend Developer">Backend Developer</option>
+        <option value="DevOps Engineer">DevOps Engineer</option>
+        <option value="Data Engineer">Data Engineer</option>
+        <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+        <option value="Software Engineer">Software Engineer</option>
+      </select>
+    </div>
+
+    <button class="btn" id="generateBtn" disabled>
+      <span class="spinner" id="spinner"></span>
+      <span id="btnText">Generate Upgraded Resume</span>
+    </button>
+
+    <div class="steps" id="steps">
+      <div class="step" id="step1"><div class="step-dot"></div> Extracting resume content</div>
+      <div class="step" id="step2"><div class="step-dot"></div> Calculating ATS score</div>
+      <div class="step" id="step3"><div class="step-dot"></div> Upgrading with AI</div>
+      <div class="step" id="step4"><div class="step-dot"></div> Generating PDF</div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="ats-card" id="atsCard">
+      <div class="ats-header">
+        <span class="ats-label">ATS Score</span>
+        <span class="ats-score-badge" id="atsScoreValue">0<span>/100</span></span>
+      </div>
+      <div class="ats-bar-bg">
+        <div class="ats-bar-fill" id="atsBarFill" style="width:0%"></div>
+      </div>
+      <div id="atsMissingSection">
+        <div class="ats-section-title">Missing Keywords — click to select, then regenerate</div>
+        <div class="ats-tags" id="atsMissingTags"></div>
+        <div class="keyword-input-row">
+          <input type="text" id="customKeywordInput" placeholder="Add your own keyword..." />
+          <button onclick="addCustomKeyword()">Add</button>
+        </div>
+      </div>
+      <div id="atsSuggestionsSection">
+        <div class="ats-section-title">Improvement Suggestions</div>
+        <ul class="ats-suggestions" id="atsSuggestions"></ul>
+      </div>
+      <button class="btn-regenerate" id="regenerateBtn" disabled onclick="regenerateWithKeywords()">
+        ⚡ Regenerate with Selected Keywords
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const fileInput    = document.getElementById('fileInput');
+    const dropZone     = document.getElementById('dropZone');
+    const fileSelected = document.getElementById('fileSelected');
+    const fileName     = document.getElementById('fileName');
+    const generateBtn  = document.getElementById('generateBtn');
+    const spinner      = document.getElementById('spinner');
+    const btnText      = document.getElementById('btnText');
+    const status       = document.getElementById('status');
+    const steps        = document.getElementById('steps');
+    const atsCard      = document.getElementById('atsCard');
+    const roleSelect   = document.getElementById('roleSelect');
+
+    fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      handleFile(e.dataTransfer.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file) return;
+      fileName.textContent = file.name;
+      fileSelected.style.display = 'flex';
+      generateBtn.disabled = false;
+      hideStatus();
+      atsCard.classList.remove('visible');
+    }
+
+    function setStep(active) {
+      steps.classList.add('visible');
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById('step' + i);
+        el.className = 'step' + (i < active ? ' done' : i === active ? ' active' : '');
+      }
+    }
+
+    function showStatus(type, message) {
+      const icons = {
+        loading: `<svg viewBox="0 0 24 24" stroke="#1e4067" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+        success: `<svg viewBox="0 0 24 24" stroke="#065f46" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"/></svg>`,
+        error:   `<svg viewBox="0 0 24 24" stroke="#991b1b" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
+      };
+      status.className = 'status ' + type;
+      status.innerHTML = icons[type] + '<span>' + message + '</span>';
+    }
+
+    function hideStatus() { status.className = 'status'; status.innerHTML = ''; }
+
+    function createKeywordTag(keyword) {
+      const tag = document.createElement('span');
+      tag.className = 'ats-tag';
+      tag.dataset.keyword = keyword;
+      tag.innerHTML = keyword + ' <span class="ats-tag-remove">+</span>';
+      tag.addEventListener('click', () => {
+        tag.classList.toggle('selected');
+        tag.querySelector('.ats-tag-remove').textContent = tag.classList.contains('selected') ? '✕' : '+';
+        updateRegenerateBtn();
+      });
+      return tag;
+    }
+
+    function updateRegenerateBtn() {
+      const selected = document.querySelectorAll('.ats-tag.selected');
+      document.getElementById('regenerateBtn').disabled = selected.length === 0;
+    }
+
+    function addCustomKeyword() {
+      const input = document.getElementById('customKeywordInput');
+      const val = input.value.trim();
+      if (!val) return;
+      const tagsEl = document.getElementById('atsMissingTags');
+      tagsEl.appendChild(createKeywordTag(val));
+      input.value = '';
+      updateRegenerateBtn();
+    }
+
+    document.getElementById('customKeywordInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addCustomKeyword();
+    });
+
+    async function regenerateWithKeywords() {
+      const selected = [...document.querySelectorAll('.ats-tag.selected')].map(t => t.dataset.keyword);
+      if (!selected.length) return;
+
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const btn = document.getElementById('regenerateBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Regenerating...';
+      showStatus('loading', 'Regenerating resume with selected keywords...');
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('keywords', selected.join(','));
+
+      try {
+        const response = await fetch('/api/resume/upgrade/with-keywords?role=' + encodeURIComponent(roleSelect.value), {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) throw new Error(await response.text() || 'Server error.');
+
+        const data = await response.json();
+
+        const byteChars = atob(data.pdfBase64);
+        const byteArr = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([byteArr], { type: 'application/pdf' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'upgraded_resume_' + Date.now() + '.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showStatus('success', 'Regenerated resume downloaded with your selected keywords!');
+        showAtsScore(data.atsScore);
+
+      } catch (err) {
+        showStatus('error', err.message || 'Something went wrong.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⚡ Regenerate with Selected Keywords';
+        updateRegenerateBtn();
+      }
+    }
+
+    function showAtsScore(ats) {
+      document.getElementById('atsScoreValue').innerHTML = ats.score + '<span>/100</span>';
+      const bar = document.getElementById('atsBarFill');
+      bar.style.width = ats.score + '%';
+      bar.style.background = ats.score >= 75 ? '#10b981' : ats.score >= 50 ? '#f59e0b' : '#ef4444';
+
+      const tagsEl = document.getElementById('atsMissingTags');
+      tagsEl.innerHTML = '';
+      if (ats.missingKeywords && ats.missingKeywords.length > 0) {
+        ats.missingKeywords.forEach(k => tagsEl.appendChild(createKeywordTag(k)));
+        document.getElementById('atsMissingSection').style.display = 'block';
+      } else {
+        document.getElementById('atsMissingSection').style.display = 'none';
+      }
+
+      const sugEl = document.getElementById('atsSuggestions');
+      sugEl.innerHTML = '';
+      if (ats.improvementSuggestions && ats.improvementSuggestions.length > 0) {
+        ats.improvementSuggestions.forEach(s => {
+          const li = document.createElement('li');
+          li.textContent = s;
+          sugEl.appendChild(li);
+        });
+        document.getElementById('atsSuggestionsSection').style.display = 'block';
+      } else {
+        document.getElementById('atsSuggestionsSection').style.display = 'none';
+      }
+
+      document.getElementById('regenerateBtn').disabled = true;
+      atsCard.classList.add('visible');
+    }
+
+    generateBtn.addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      generateBtn.disabled = true;
+      spinner.style.display = 'block';
+      btnText.textContent = 'Upgrading your resume...';
+      steps.classList.add('visible');
+      hideStatus();
+      atsCard.classList.remove('visible');
+
+      setStep(1);
+      showStatus('loading', 'Extracting and analyzing your resume...');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        setStep(2);
+        await new Promise(r => setTimeout(r, 800));
+        setStep(3);
+        showStatus('loading', 'AI is rewriting your resume for maximum impact...');
+        await new Promise(r => setTimeout(r, 800));
+        setStep(4);
+        showStatus('loading', 'Generating your upgraded PDF...');
+
+        const response = await fetch('/api/resume/upgrade?role=' + encodeURIComponent(roleSelect.value), {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(errText || 'Server error. Please try again.');
+        }
+
+        const data = await response.json();
+
+        // Download PDF from base64
+        const byteChars = atob(data.pdfBase64);
+        const byteArr = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([byteArr], { type: 'application/pdf' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'upgraded_resume_' + Date.now() + '.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        for (let i = 1; i <= 4; i++) document.getElementById('step' + i).className = 'step done';
+        showStatus('success', 'Your upgraded resume has been downloaded!');
+        showAtsScore(data.atsScore);
+
+      } catch (err) {
+        showStatus('error', err.message || 'Something went wrong. Please try again.');
+        steps.classList.remove('visible');
+      } finally {
+        generateBtn.disabled = false;
+        spinner.style.display = 'none';
+        btnText.textContent = 'Generate Upgraded Resume';
+      }
+    });
+  </script>
+</body>
+</html>

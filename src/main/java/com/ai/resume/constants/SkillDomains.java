@@ -8,9 +8,9 @@ public class SkillDomains {
             "Backend Development",
             "Frontend Development",
             "Databases",
-            "Cloud & Devops",
+            "Cloud & DevOps",
             "AI / ML",
-            "Tools & Platforms"
-
+            "Tools & Platforms",
+            "Soft Skills"
     );
 }

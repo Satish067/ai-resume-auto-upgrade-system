@@ -3,12 +3,14 @@ package com.ai.resume;
 import com.ai.resume.config.OpenAiConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
 @ComponentScan("com.ai.resume")
+@ConfigurationPropertiesScan
 @EnableConfigurationProperties(OpenAiConfig.class)
 @EnableAsync
 public class Application {

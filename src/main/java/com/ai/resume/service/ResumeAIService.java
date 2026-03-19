@@ -8,36 +8,33 @@ import com.ai.resume.dto.ResumeSectionsDTO;
 import com.ai.resume.dto.SkillsResponseDTO;
 import com.ai.resume.dto.UpgradedResumeDTO;
 import okhttp3.*;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.PostMapping;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class ResumeAIService {
 
-
     private final OpenAiConfig openAiConfig;
     private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 
     private final OkHttpClient client;
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    private final Map<String, SkillsResponseDTO> skillsCache = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private static final Logger log =
             LoggerFactory.getLogger(ResumeAIService.class);
@@ -46,11 +43,12 @@ public class ResumeAIService {
 
     @PostConstruct
     public void checkApiKey() {
-        System.out.println("OPENAI API KEY AT STARTUP = [" + openAiConfig.getApiKey() + "]");
-        if (openAiConfig.getApiKey() == null || openAiConfig.getApiKey().isBlank()) {
+        String key = openAiConfig.getApiKey();
+        if (key == null || key.isBlank()) {
             throw new IllegalStateException(
-                    "❌ OpenAI API key not loaded. Check application.properties");
+                    "OpenAI API key not loaded. Check application.properties");
         }
+        log.info("API key loaded. Length={}, Starts with={}", key.length(), key.substring(0, 10));
     }
 
     public ResumeAIService(OpenAiConfig openAiConfig) {
@@ -60,6 +58,7 @@ public class ResumeAIService {
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(120, TimeUnit.SECONDS)
                 .build();
+
     }
 
     // For extractiong Sections, Keywords from Resume
@@ -77,28 +76,45 @@ public class ResumeAIService {
 
     private String buildSectionExtractionPrompt(String resumeText){
         return """
-        You are an expert technical recruiter.
-        
-        Extract the following sections from the resume:
-        1. Skills
-        2. Experience
-        3. Projects
-        4. Education
-        
-        Focus on a Java Developer role.
-        
-        Return STRICT JSON in this format:
+        You are an ATS-grade resume parser.
+
+        TASK:
+        Extract ALL modules/sections present in the resume and return them in STRICT JSON.
+
+        IMPORTANT:
+        - Return ONLY valid JSON (no markdown, no commentary).
+        - Use these exact field names and types.
+
+        JSON FORMAT:
         {
-            "skills": [],
-            "experience": [],
-            "projects": [],
-            "education": []
+          "professionalSummary": "string",
+          "skillCategories": [
+            {
+              "domain": "string",
+              "skills": [
+                { "name": "string", "explanation": "string" }
+              ]
+            }
+          ],
+          "experience": [
+            { "company": "string", "role": "string", "duration": "string", "description": "string" }
+          ],
+          "projects": [
+            { "name": "string", "description": "string", "techStack": ["string"] }
+          ],
+          "education": [
+            { "degree": "string", "institution": "string", "year": "string" }
+          ]
         }
-        
-        Resume:
+
+        RESUME:
+        <<<
         %s
-        """.formatted(resumeText, ResumeSchema.UPGRADED_RESUME_SCHEMA);
+        >>>
+        """.formatted(resumeText);
     }
+
+
     private String buildRequestBody(String prompt) throws Exception{
         ObjectNode root = objectMapper.createObjectNode();
         root.put("model", openAiConfig.getModel());
@@ -106,17 +122,29 @@ public class ResumeAIService {
         ArrayNode messages = root.putArray("messages");
 
         ObjectNode system = messages.addObject();
+
         system.put("role", "system");
-        system.put("content", "you are an expert ATS resume analyzer.");
+        system.put("content", """
+You are a backend JSON API.
+
+Return ONLY valid JSON.
+No markdown.
+No explanations.
+No extra text.
+
+The response MUST be directly parseable by Jackson.
+
+If the JSON is invalid, the application will crash.
+""");
 
         ObjectNode user = messages.addObject();
         user.put("role", "user");
         user.put("content", prompt);
 
-
-
         return objectMapper.writeValueAsString(root);
     }
+
+
     private String extractContentFromResponse(String response) throws Exception {
 
         JsonNode root = objectMapper.readTree(response);
@@ -147,8 +175,6 @@ public class ResumeAIService {
     }
 
 
-
-
     // For ATS Score
     private String buildAtsScoringPrompt(String resumeText, String role) {
         return """
@@ -171,8 +197,10 @@ public class ResumeAIService {
                 
                 Resume:
                 %s
-                """.formatted(role, resumeText, ResumeSchema.UPGRADED_RESUME_SCHEMA, ResumeSchema.ATS_SCHEMA);
+                """.formatted(role, resumeText);
     }
+
+
     public AtsScoreDTO calculateAtsScore(String resumeText, String role)
             throws Exception {
 
@@ -186,61 +214,91 @@ public class ResumeAIService {
         return objectMapper.readValue(aiJson, AtsScoreDTO.class);
     }
 
+
     // For Resume Auto Upgradation
     private String buildResumeUpgradePrompt(String resumeText, List<String> missingKeywords, String role) {
+        String keywordsStr = (missingKeywords == null || missingKeywords.isEmpty())
+                ? "none"
+                : String.join(", ", missingKeywords);
         return """
-                You are an expert ATS resume writer and technical recruiter.
-                
+                You are a world-class ATS resume writer and senior technical recruiter at a top tech company.
+
                 TASK:
-                Rewrite and upgrade the COMPLETE resume for the role of %s.
-                
-                IMPORTANT:
-                Before responding, internally verify that ALL sections from the resume are present.
-                If any section is missing, regenerate the response.
-                
-                
-                MANDATORY RULES:
-                
-                - Rewrite EVERY section.
-                - DO NOT copy sentences verbatim.
-                - DO NOT return original text.
-                - Improve impact, clarity, and ATS alignment.
-                - Preserve factual accuracy.
-                - Do NOT invent experience.
-                - Do NOT wrap the response in markdown.
-                - Return raw JSON only.
-                
-                CRITICAL:
-                - All fields must be present.
+                Completely rewrite and upgrade the resume below for the role of %s.
+                Use ONLY the information present in the resume below. Do NOT use or mix information from any other resume.
+                Treat this as a completely fresh request with no memory of previous resumes.
+
+                REWRITING RULES:
+                - Personal Details: Extract ALL 7 fields ONLY from the resume below. Rules per field:
+                  * name: full name exactly as written
+                  * email: email address exactly as written
+                  * phone: phone number exactly as written
+                  * location: city and country (e.g. "Mumbai, India") — look for any city/country/address mention
+                  * linkedin: full LinkedIn URL or username — look for "linkedin.com" anywhere in the resume
+                  * github: full GitHub URL or username — look for "github.com" anywhere in the resume
+                  * portfolio: any other website/portfolio URL — look for personal websites, portfolio links
+                  If a field is genuinely not present anywhere in the resume, set it to "". NEVER invent or reuse from previous resumes.
+                - Professional Summary / Objective:
+                  * First, determine if the person is a FRESHER (no work experience, only projects/internships) or EXPERIENCED (has at least one full-time job).
+                  * Set "summaryType" to "PROFESSIONAL SUMMARY" if experienced, or "CAREER OBJECTIVE" if fresher.
+                  * Write exactly 2–4 sentences covering: who they are, their key skills, what value they bring, and their career goal.
+                  * Be concise and impactful — no filler phrases like "I am a passionate developer".
+                - Skills: Group into relevant domains only from: Backend Development, Frontend Development, Databases, Cloud & DevOps, AI / ML, Tools & Platforms, Soft Skills.
+                  * ONLY include skills that are relevant to the role of %s. Do NOT list every skill from the resume.
+                  * For Technical skills and Tools: write a sharp 1-line proficiency explanation per skill.
+                  * For Soft Skills: set explanation to empty string "". List only 3-5 genuine soft skills (e.g. Problem Solving, Team Collaboration, Communication).
+                  * Omit any domain that has no relevant skills.
+                - Experience: Cover ALL roles — full-time jobs AND internships. For EACH role:
+                  * Write 4-6 bullet points starting with strong action verbs (Engineered, Architected, Optimized, Delivered, Reduced, Increased, Built, Automated, Designed, Led).
+                  * Every bullet MUST focus on impact and outcome, not just tasks. Include metrics wherever possible (e.g. "Reduced API response time by 35%%", "Automated deployment pipeline saving 4 hours/week").
+                  * If the resume has no metrics, infer realistic ones based on the context.
+                  * Separate each bullet point with a newline character \n.
+                - Projects: For EACH project write 3-5 bullet points separated by newline character \n. Cover:
+                  * What problem it solves
+                  * Your specific contribution and implementation
+                  * Technologies used and why
+                  * Results or impact (quantify where possible)
+                  Note: This section is critical for freshers — treat it with the same weight as experience.
+                - Education: Keep all fields accurate. Extract degree, institution, year of passing, and CGPA/percentage exactly as written. Set cgpa to empty string if not present.
+                - Certifications: Extract ALL certifications, online courses, and professional certificates from the resume.
+                  * Include name, issuer/platform (e.g. Coursera, Udemy, Google, AWS), and year/date.
+                  * If certifications section is absent from the resume, return an empty array [].
+                - Achievements: Extract ALL achievements, awards, hackathons, competitions, academic honours, and workplace recognition.
+                  * Include title, a one-line description of what it was, and year.
+                  * If none are present in the resume, return an empty array [].
+
+                STRICT RULES:
+                - ONLY use data from the resume provided below. Ignore all previous context.
+                - Every section from the input MUST appear in the output.
                 - Arrays must NEVER be empty.
-                - Extract and rewrite ALL existing entries from the resume.
-                - If information exists in the resume, it MUST appear in the output.
-                
-                If a section exists in the input, it MUST exist in the output.
-                
-                Never return only one section.
-                
-                Missing ATS Keywords to incorporate where relevant:
+                - Do NOT copy sentences verbatim from the input.
+                - Do NOT invent companies, degrees, roles, or contact details.
+                - Do NOT wrap response in markdown.
+                - Return raw JSON only, starting with { and ending with }.
+
+                SELECTED KEYWORDS TO INCORPORATE (these MUST appear naturally in the upgraded resume — in skills, experience bullets, project descriptions, or summary):
                 %s
-                
-                
-                Your response MUST start with { and end with }.
-                Do not include explanations, markdown, or extra text.
-                
-                Do NOT summarize the resume.
-                Rewrite it with equivalent or greater detail.
-                
-                
+
+                If the keywords list is empty, use the resume content as-is without adding keywords.
+
+                RESPOND IN THIS EXACT JSON STRUCTURE:
                 {
+                  "personalDetails": {
+                    "name": "",
+                    "email": "",
+                    "phone": "",
+                    "location": "",
+                    "linkedin": "",
+                    "github": "",
+                    "portfolio": ""
+                  },
+                  "summaryType": "",
                   "professionalSummary": "",
-                  "skills": [
+                  "skillCategories": [
                     {
-                      "domain": "Backend Development | Frontend | Databases | Cloud | Tools | Other",
+                      "domain": "",
                       "skills": [
-                        {
-                          "name": "Skill name",
-                          "explanation": "1-line explanation of proficiency"
-                        }
+                        { "name": "", "explanation": "" }
                       ]
                     }
                   ],
@@ -249,33 +307,47 @@ public class ResumeAIService {
                       "role": "",
                       "company": "",
                       "duration": "",
-                      "responsibilities": []
+                      "description": ""
                     }
                   ],
                   "projects": [
                     {
-                      "title": "",
+                      "name": "",
                       "description": "",
-                      "technologies": []
+                      "techStack": []
                     }
                   ],
                   "education": [
                     {
                       "degree": "",
                       "institution": "",
+                      "year": "",
+                      "cgpa": ""
+                    }
+                  ],
+                  "certifications": [
+                    {
+                      "name": "",
+                      "issuer": "",
+                      "year": ""
+                    }
+                  ],
+                  "achievements": [
+                    {
+                      "title": "",
+                      "description": "",
                       "year": ""
                     }
                   ]
-                
                 }
-                
-                RESUME:
+
+                RESUME TO UPGRADE (use ONLY this resume, ignore all previous context):
                 <<<
                 %s
                 >>>
-                
-                """.formatted(role, missingKeywords, resumeText);
+                """.formatted(role, role, keywordsStr, resumeText);
     }
+
 
     public UpgradedResumeDTO upgradeResume(
             String resumeText,
@@ -290,19 +362,6 @@ public class ResumeAIService {
         String aiJson = getAIJson(requestBody);
 
         return objectMapper.readValue(aiJson, UpgradedResumeDTO.class);
-    }
-
-
-    private String extractPureJson(String text) {
-
-        int start = text.indexOf('{');
-        int end = text.lastIndexOf('}');
-
-        if (start >= 0 && end > start) {
-            return text.substring(start, end + 1);
-        }
-
-        throw new RuntimeException("No JSON found in response: " + text);
     }
 
 
@@ -322,14 +381,13 @@ public class ResumeAIService {
 
 
 
-
-
     private String callOpenAI(String requestBody) throws Exception {
 
+
         Request request = new Request.Builder()
-                .url("https://api.openai.com/v1/chat/completions")
-                .addHeader("Authorization", "Bearer " + openAiConfig.getApiKey())
-                .addHeader("Content-Type", "application/json")
+                .url(OPENAI_URL)
+                .header("Authorization", "Bearer " + openAiConfig.getApiKey())
+                .header("Content-Type", "application/json")
                 .post(RequestBody.create(
                         requestBody,
                         MediaType.parse("application/json")
@@ -347,12 +405,13 @@ public class ResumeAIService {
             String responseBody = response.body().string();
 
             // ✅ Safe logging
-            log.error("🔥 REAL OPENAI RESPONSE:\n{}", responseBody);
+            log.debug("OpenAI response: {}", responseBody);
 
             return responseBody;
         }
     }
 
+    // For extracting Skills from Resume
     public String buildSkillExtractionPrompt(String resumeText) {
         return """
 You are an ATS-grade resume parser.
@@ -393,10 +452,9 @@ RESUME:
 """.formatted(String.join("\n- ", SkillDomains.ALLOWED), resumeText);
     }
 
-    public SkillsResponseDTO extractSkills(String resumeText) throws Exception {
 
+    public SkillsResponseDTO extractSkills(String resumeText) throws Exception {
         String prompt = buildSkillExtractionPrompt(resumeText);
-        String key = Integer.toHexString(resumeText.hashCode());
 
         String requestBody = buildRequestBody(prompt);
         String aiJson = getAIJson(requestBody);
@@ -404,12 +462,14 @@ RESUME:
         return objectMapper.readValue(aiJson, SkillsResponseDTO.class);
     }
 
+
     @Async("aiExecutor")
     public CompletableFuture<SkillsResponseDTO> extractSkillsAsync(String resumeText) throws Exception{
         SkillsResponseDTO skills = extractSkills(resumeText);
 
         return CompletableFuture.completedFuture(skills);
     }
+
 
     @Async
     public CompletableFuture<AtsScoreDTO> calculateAtsScoreAsync(String resumeText, String role) throws Exception {

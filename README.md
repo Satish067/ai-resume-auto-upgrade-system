@@ -98,15 +98,8 @@ Input Resume → Analysis → AI Enhancement → ATS Score → Optimized Resume
 ```bash
 git clone https://github.com/your-username/ai-resume-upgrader.git
 cd ai-resume-upgrader
-```
-Run the Application
-# For Spring Boot
-mvn spring-boot:run
-
-# For Python
-python app.py
-## Author
-
-Satish B
+```      
+### Author
+# Satish B
 Software Engineer
 Backend Development and AI Enthusiast

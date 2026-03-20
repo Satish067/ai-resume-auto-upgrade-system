@@ -49,7 +49,7 @@ The AI Resume Upgradation System helps job seekers enhance their resumes by impr
 ## Tech Stack
 
 ### Backend
-- Java (Spring Boot) / Python
+- Java (Spring Boot)
 - REST APIs
 
 ### AI Integration
@@ -62,7 +62,7 @@ The AI Resume Upgradation System helps job seekers enhance their resumes by impr
 ### Tools
 - Git
 - GitHub
-- IntelliJ IDEA / VS Code
+- IntelliJ IDEA
 
 ---
 
@@ -87,7 +87,7 @@ Input Resume → Analysis → AI Enhancement → ATS Score → Optimized Resume
 ## Getting Started
 
 ### Prerequisites
-- Java or Python installed  
+- Java installed  
 - OpenAI API key  
 - MySQL database  
 

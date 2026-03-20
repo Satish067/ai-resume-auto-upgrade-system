@@ -98,9 +98,9 @@ Input Resume → Analysis → AI Enhancement → ATS Score → Optimized Resume
 ```bash
 git clone https://github.com/your-username/ai-resume-upgrader.git
 cd ai-resume-upgrader
+```
+## Author
 
-# Author
-
-Satish B
+# Satish B
 Software Engineer
 Backend Development and AI Enthusiast

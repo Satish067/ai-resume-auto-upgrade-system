@@ -17,7 +17,7 @@ public class ResumeOrchestratorService {
 
     public ResumeAnalysis runFullAnalysis(String resumeText, String role) throws Exception {
 
-        CompletableFuture<SkillsResponseDTO> skillsFuture = resumeAIService.extractSkillsAsync(resumeText);
+        CompletableFuture<SkillsResponseDTO> skillsFuture = resumeAIService.extractSkillsAsync(resumeText, role);
         CompletableFuture<AtsScoreDTO> atsFuture = resumeAIService.calculateAtsScoreAsync(resumeText, role);
 
         CompletableFuture.allOf(skillsFuture, atsFuture).join();

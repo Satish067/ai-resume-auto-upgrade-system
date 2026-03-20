@@ -2,6 +2,7 @@ package com.ai.resume.service;
 
 import com.ai.resume.ai.ResumeSchema;
 import com.ai.resume.config.OpenAiConfig;
+import com.ai.resume.constants.IndustryRoles;
 import com.ai.resume.constants.SkillDomains;
 import com.ai.resume.dto.AtsScoreDTO;
 import com.ai.resume.dto.ResumeSectionsDTO;
@@ -177,16 +178,26 @@ If the JSON is invalid, the application will crash.
 
     // For ATS Score
     private String buildAtsScoringPrompt(String resumeText, String role) {
+        String industry = IndustryRoles.getIndustryForRole(role);
+        
         return """
-                You are an ATS (Applicant Tracking System) used by recruiters.
+                You are an ATS (Applicant Tracking System) used by recruiters in the %s industry.
                 
                 Evaluate the resume for the role of %s.
                 
+                Industry-specific evaluation criteria for %s:
+                - Technical skills relevant to %s
+                - Industry-specific certifications and qualifications
+                - Relevant experience and achievements
+                - Domain knowledge and expertise
+                - Professional development in %s field
+                
                 Scoring rules:
                 - Score between 0 and 100
-                - Consider keyword match, skills, experience and projects
-                - Penalize missing core skills
-                - Be strict and realistic
+                - Consider keyword match, skills, experience and projects relevant to %s
+                - Penalize missing core skills for %s role
+                - Be strict and realistic based on %s industry standards
+                - Focus on industry-relevant accomplishments
                 
                 Return STRICT JSON only in this format:
                 {
@@ -197,7 +208,7 @@ If the JSON is invalid, the application will crash.
                 
                 Resume:
                 %s
-                """.formatted(role, resumeText);
+                """.formatted(industry, role, industry, role, industry, role, role, industry, resumeText);
     }
 
 
@@ -217,54 +228,63 @@ If the JSON is invalid, the application will crash.
 
     // For Resume Auto Upgradation
     private String buildResumeUpgradePrompt(String resumeText, List<String> missingKeywords, String role) {
+        String industry = IndustryRoles.getIndustryForRole(role);
+        List<String> skillDomains = SkillDomains.getSkillDomainsForRole(role);
         String keywordsStr = (missingKeywords == null || missingKeywords.isEmpty())
                 ? "none"
                 : String.join(", ", missingKeywords);
+                
         return """
-                You are a world-class ATS resume writer and senior technical recruiter at a top tech company.
+                You are a world-class ATS resume writer and senior recruiter specializing in the %s industry.
 
                 TASK:
-                Completely rewrite and upgrade the resume below for the role of %s.
+                Completely rewrite and upgrade the resume below for the role of %s in the %s industry.
                 Use ONLY the information present in the resume below. Do NOT use or mix information from any other resume.
                 Treat this as a completely fresh request with no memory of previous resumes.
 
-                REWRITING RULES:
+                INDUSTRY-SPECIFIC REWRITING RULES FOR %s:
                 - Personal Details: Extract ALL 7 fields ONLY from the resume below. Rules per field:
                   * name: full name exactly as written
                   * email: email address exactly as written
                   * phone: phone number exactly as written
                   * location: city and country (e.g. "Mumbai, India") — look for any city/country/address mention
                   * linkedin: full LinkedIn URL or username — look for "linkedin.com" anywhere in the resume
-                  * github: full GitHub URL or username — look for "github.com" anywhere in the resume
+                  * github: full GitHub URL or username — look for "github.com" anywhere in the resume (if relevant to %s)
                   * portfolio: any other website/portfolio URL — look for personal websites, portfolio links
                   If a field is genuinely not present anywhere in the resume, set it to "". NEVER invent or reuse from previous resumes.
                 - Professional Summary / Objective:
                   * First, determine if the person is a FRESHER (no work experience, only projects/internships) or EXPERIENCED (has at least one full-time job).
                   * Set "summaryType" to "PROFESSIONAL SUMMARY" if experienced, or "CAREER OBJECTIVE" if fresher.
-                  * Write exactly 2–4 sentences covering: who they are, their key skills, what value they bring, and their career goal.
-                  * Be concise and impactful — no filler phrases like "I am a passionate developer".
-                - Skills: Group into relevant domains only from: Backend Development, Frontend Development, Databases, Cloud & DevOps, AI / ML, Tools & Platforms, Soft Skills.
-                  * ONLY include skills that are relevant to the role of %s. Do NOT list every skill from the resume.
-                  * For Technical skills and Tools: write a sharp 1-line proficiency explanation per skill.
-                  * For Soft Skills: set explanation to empty string "". List only 3-5 genuine soft skills (e.g. Problem Solving, Team Collaboration, Communication).
+                  * Write exactly 2–4 sentences covering: who they are, their key skills relevant to %s, what value they bring to %s industry, and their career goal.
+                  * Be concise and impactful — no filler phrases like "I am a passionate professional".
+                  * Use %s industry terminology and highlight relevant domain expertise.
+                - Skills: Group into relevant domains from: %s.
+                  * ONLY include skills that are relevant to the role of %s in %s industry. Do NOT list every skill from the resume.
+                  * For Technical skills and Tools: write a sharp 1-line proficiency explanation per skill relevant to %s.
+                  * For Soft Skills: set explanation to empty string "". List only 3-5 genuine soft skills relevant to %s industry.
                   * Omit any domain that has no relevant skills.
+                  * Prioritize %s-specific skills and certifications.
                 - Experience: Cover ALL roles — full-time jobs AND internships. For EACH role:
-                  * Write 4-6 bullet points starting with strong action verbs (Engineered, Architected, Optimized, Delivered, Reduced, Increased, Built, Automated, Designed, Led).
-                  * Every bullet MUST focus on impact and outcome, not just tasks. Include metrics wherever possible (e.g. "Reduced API response time by 35%%", "Automated deployment pipeline saving 4 hours/week").
-                  * If the resume has no metrics, infer realistic ones based on the context.
+                  * Write 4-6 bullet points starting with strong action verbs (Engineered, Architected, Optimized, Delivered, Reduced, Increased, Built, Automated, Designed, Led, Managed, Implemented).
+                  * Every bullet MUST focus on impact and outcome relevant to %s industry, not just tasks. Include metrics wherever possible.
+                  * If the resume has no metrics, infer realistic ones based on %s industry context.
+                  * Use %s industry terminology and highlight achievements relevant to the field.
                   * Separate each bullet point with a newline character \n.
                 - Projects: For EACH project write 3-5 bullet points separated by newline character \n. Cover:
-                  * What problem it solves
-                  * Your specific contribution and implementation
-                  * Technologies used and why
-                  * Results or impact (quantify where possible)
+                  * What problem it solves in %s context
+                  * Your specific contribution and implementation using %s methodologies
+                  * Technologies/tools used and why they're relevant to %s
+                  * Results or impact (quantify where possible using %s metrics)
                   Note: This section is critical for freshers — treat it with the same weight as experience.
                 - Education: Keep all fields accurate. Extract degree, institution, year of passing, and CGPA/percentage exactly as written. Set cgpa to empty string if not present.
+                  * Highlight education relevant to %s field.
                 - Certifications: Extract ALL certifications, online courses, and professional certificates from the resume.
-                  * Include name, issuer/platform (e.g. Coursera, Udemy, Google, AWS), and year/date.
+                  * Include name, issuer/platform, and year/date.
+                  * Prioritize %s-relevant certifications and professional development.
                   * If certifications section is absent from the resume, return an empty array [].
                 - Achievements: Extract ALL achievements, awards, hackathons, competitions, academic honours, and workplace recognition.
                   * Include title, a one-line description of what it was, and year.
+                  * Highlight achievements relevant to %s industry.
                   * If none are present in the resume, return an empty array [].
 
                 STRICT RULES:
@@ -275,6 +295,7 @@ If the JSON is invalid, the application will crash.
                 - Do NOT invent companies, degrees, roles, or contact details.
                 - Do NOT wrap response in markdown.
                 - Return raw JSON only, starting with { and ending with }.
+                - Use %s industry best practices and terminology throughout.
 
                 SELECTED KEYWORDS TO INCORPORATE (these MUST appear naturally in the upgraded resume — in skills, experience bullets, project descriptions, or summary):
                 %s
@@ -345,7 +366,10 @@ If the JSON is invalid, the application will crash.
                 <<<
                 %s
                 >>>
-                """.formatted(role, role, keywordsStr, resumeText);
+                """.formatted(industry, role, industry, industry, industry, industry, industry, industry, 
+                            String.join(", ", skillDomains), role, industry, industry, industry, industry, 
+                            industry, industry, industry, industry, industry, industry, industry, industry, 
+                            industry, industry, industry, industry, keywordsStr, resumeText);
     }
 
 
@@ -412,17 +436,21 @@ If the JSON is invalid, the application will crash.
     }
 
     // For extracting Skills from Resume
-    public String buildSkillExtractionPrompt(String resumeText) {
+    public String buildSkillExtractionPrompt(String resumeText, String role) {
+        String industry = IndustryRoles.getIndustryForRole(role);
+        List<String> allowedDomains = SkillDomains.getSkillDomainsForIndustry(industry);
+        
         return """
-You are an ATS-grade resume parser.
+You are an ATS-grade resume parser specialized in %s industry.
 
 TASK:
 Extract skills and return ONLY valid JSON.
 
 RULES:
-- Use ONLY the domains listed below
+- Use ONLY the domains listed below that are relevant to %s
 - DO NOT create new domains
 - Each skill must have name and explanation (max 20 words)
+- Focus on skills relevant to %s role
 - No markdown
 - No extra fields
 - No commentary
@@ -449,12 +477,12 @@ RESUME:
 <<<
 %s
 >>>
-""".formatted(String.join("\n- ", SkillDomains.ALLOWED), resumeText);
+""".formatted(industry, industry, role, String.join("\n- ", allowedDomains), resumeText);
     }
 
 
-    public SkillsResponseDTO extractSkills(String resumeText) throws Exception {
-        String prompt = buildSkillExtractionPrompt(resumeText);
+    public SkillsResponseDTO extractSkills(String resumeText, String role) throws Exception {
+        String prompt = buildSkillExtractionPrompt(resumeText, role);
 
         String requestBody = buildRequestBody(prompt);
         String aiJson = getAIJson(requestBody);
@@ -462,12 +490,23 @@ RESUME:
         return objectMapper.readValue(aiJson, SkillsResponseDTO.class);
     }
 
+    // Backward compatibility method
+    public SkillsResponseDTO extractSkills(String resumeText) throws Exception {
+        return extractSkills(resumeText, "Software Engineer"); // Default role
+    }
+
 
     @Async("aiExecutor")
-    public CompletableFuture<SkillsResponseDTO> extractSkillsAsync(String resumeText) throws Exception{
-        SkillsResponseDTO skills = extractSkills(resumeText);
+    public CompletableFuture<SkillsResponseDTO> extractSkillsAsync(String resumeText, String role) throws Exception{
+        SkillsResponseDTO skills = extractSkills(resumeText, role);
 
         return CompletableFuture.completedFuture(skills);
+    }
+
+    // Backward compatibility method
+    @Async("aiExecutor")
+    public CompletableFuture<SkillsResponseDTO> extractSkillsAsync(String resumeText) throws Exception{
+        return extractSkillsAsync(resumeText, "Software Engineer");
     }
 
 

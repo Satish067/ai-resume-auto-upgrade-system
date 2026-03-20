@@ -1,5 +1,6 @@
 package com.ai.resume.controller;
 
+import com.ai.resume.constants.IndustryRoles;
 import com.ai.resume.dto.*;
 import com.ai.resume.service.ResumeAIService;
 import com.ai.resume.service.ResumeOrchestratorService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -92,21 +94,30 @@ public class ResumeController {
         return "RUNNING";
     }
 
+    @GetMapping("/industries")
+    public Map<String, Object> getIndustriesAndRoles() {
+        return Map.of(
+            "industries", IndustryRoles.getAllIndustries(),
+            "roles", IndustryRoles.getAllRoles(),
+            "industryRoles", IndustryRoles.INDUSTRY_ROLES
+        );
+    }
+
     @PostMapping("/skills")
     public SkillsResponseDTO extractSkills(
-            @Valid @RequestBody ResumeRequestDTO request)
+            @Valid @RequestBody ResumeRequestDTO request,
+            @RequestParam(defaultValue = "Software Engineer") String role)
             throws Exception {
 
-        return aiService.extractSkills(request.getResumeText());
+        return aiService.extractSkills(request.getResumeText(), role);
     }
 
     @PostMapping(value = "/analysis", consumes = MediaType.TEXT_PLAIN_VALUE)
-    public ResumeAnalysis analyzeResume(@Valid @RequestBody String resumeText) throws Exception{
+    public ResumeAnalysis analyzeResume(
+            @Valid @RequestBody String resumeText,
+            @RequestParam(defaultValue = "Software Engineer") String role) throws Exception{
 
-        return orchestrator.runFullAnalysis(
-                resumeText,
-                "Software Engineer" // temporary for testing
-        );
+        return orchestrator.runFullAnalysis(resumeText, role);
     }
 
 }

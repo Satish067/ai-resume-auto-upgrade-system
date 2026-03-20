@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Resume Upgrader</title>
+  <title>AI Resume Upgrader - All Industries</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -414,7 +414,7 @@
       </div>
       <h1>AI Resume Upgrader</h1>
     </div>
-    <p class="subtitle">Upload your resume and get an ATS-optimized, upgraded PDF instantly.</p>
+    <p class="subtitle">Upload your resume and get an ATS-optimized, upgraded PDF for any industry - IT, Healthcare, Engineering, Finance, and more.</p>
 
     <div class="drop-zone" id="dropZone">
       <input type="file" id="fileInput" accept=".pdf,.doc,.docx" />
@@ -433,17 +433,165 @@
     <div class="role-select-wrap">
       <label for="roleSelect">Target Role</label>
       <select id="roleSelect">
-        <option value="Java Developer">Java Developer</option>
-        <option value="Python Developer">Python Developer</option>
-        <option value="JavaScript Developer">JavaScript Developer</option>
-        <option value="TypeScript Developer">TypeScript Developer</option>
-        <option value="Full Stack Developer">Full Stack Developer</option>
-        <option value="Frontend Developer">Frontend Developer</option>
-        <option value="Backend Developer">Backend Developer</option>
-        <option value="DevOps Engineer">DevOps Engineer</option>
-        <option value="Data Engineer">Data Engineer</option>
-        <option value="Machine Learning Engineer">Machine Learning Engineer</option>
-        <option value="Software Engineer">Software Engineer</option>
+        <!-- Information Technology -->
+        <optgroup label="Information Technology">
+          <option value="Software Engineer">Software Engineer</option>
+          <option value="Full Stack Developer">Full Stack Developer</option>
+          <option value="Frontend Developer">Frontend Developer</option>
+          <option value="Backend Developer">Backend Developer</option>
+          <option value="DevOps Engineer">DevOps Engineer</option>
+          <option value="Data Engineer">Data Engineer</option>
+          <option value="Machine Learning Engineer">Machine Learning Engineer</option>
+          <option value="Cloud Architect">Cloud Architect</option>
+          <option value="Cybersecurity Analyst">Cybersecurity Analyst</option>
+          <option value="Product Manager">Product Manager</option>
+          <option value="QA Engineer">QA Engineer</option>
+          <option value="Mobile App Developer">Mobile App Developer</option>
+        </optgroup>
+        
+        <!-- Healthcare & Medical -->
+        <optgroup label="Healthcare & Medical">
+          <option value="Doctor (MBBS)">Doctor (MBBS)</option>
+          <option value="Nurse">Nurse</option>
+          <option value="Pharmacist">Pharmacist</option>
+          <option value="Medical Technologist">Medical Technologist</option>
+          <option value="Physiotherapist">Physiotherapist</option>
+          <option value="Radiologist">Radiologist</option>
+          <option value="Surgeon">Surgeon</option>
+          <option value="Dentist">Dentist</option>
+          <option value="Medical Research Scientist">Medical Research Scientist</option>
+          <option value="Healthcare Administrator">Healthcare Administrator</option>
+          <option value="Clinical Data Manager">Clinical Data Manager</option>
+          <option value="Biomedical Engineer">Biomedical Engineer</option>
+        </optgroup>
+        
+        <!-- Engineering -->
+        <optgroup label="Engineering">
+          <option value="Civil Engineer">Civil Engineer</option>
+          <option value="Mechanical Engineer">Mechanical Engineer</option>
+          <option value="Electrical Engineer">Electrical Engineer</option>
+          <option value="Electronics Engineer">Electronics Engineer</option>
+          <option value="Chemical Engineer">Chemical Engineer</option>
+          <option value="Aerospace Engineer">Aerospace Engineer</option>
+          <option value="Environmental Engineer">Environmental Engineer</option>
+          <option value="Structural Engineer">Structural Engineer</option>
+          <option value="Project Engineer">Project Engineer</option>
+          <option value="Quality Engineer">Quality Engineer</option>
+          <option value="Design Engineer">Design Engineer</option>
+          <option value="Process Engineer">Process Engineer</option>
+        </optgroup>
+        
+        <!-- Finance & Banking -->
+        <optgroup label="Finance & Banking">
+          <option value="Financial Analyst">Financial Analyst</option>
+          <option value="Investment Banker">Investment Banker</option>
+          <option value="Accountant">Accountant</option>
+          <option value="Auditor">Auditor</option>
+          <option value="Risk Manager">Risk Manager</option>
+          <option value="Portfolio Manager">Portfolio Manager</option>
+          <option value="Credit Analyst">Credit Analyst</option>
+          <option value="Financial Planner">Financial Planner</option>
+          <option value="Tax Consultant">Tax Consultant</option>
+          <option value="Compliance Officer">Compliance Officer</option>
+          <option value="Actuary">Actuary</option>
+          <option value="Treasury Analyst">Treasury Analyst</option>
+        </optgroup>
+        
+        <!-- Marketing & Sales -->
+        <optgroup label="Marketing & Sales">
+          <option value="Digital Marketing Manager">Digital Marketing Manager</option>
+          <option value="Sales Executive">Sales Executive</option>
+          <option value="Brand Manager">Brand Manager</option>
+          <option value="Content Marketing Specialist">Content Marketing Specialist</option>
+          <option value="SEO Specialist">SEO Specialist</option>
+          <option value="Social Media Manager">Social Media Manager</option>
+          <option value="Business Development Manager">Business Development Manager</option>
+          <option value="Account Manager">Account Manager</option>
+          <option value="Marketing Analyst">Marketing Analyst</option>
+          <option value="Product Marketing Manager">Product Marketing Manager</option>
+          <option value="Sales Manager">Sales Manager</option>
+          <option value="Customer Success Manager">Customer Success Manager</option>
+        </optgroup>
+        
+        <!-- Education & Academia -->
+        <optgroup label="Education & Academia">
+          <option value="Teacher">Teacher</option>
+          <option value="Professor">Professor</option>
+          <option value="Research Scientist">Research Scientist</option>
+          <option value="Academic Coordinator">Academic Coordinator</option>
+          <option value="Curriculum Developer">Curriculum Developer</option>
+          <option value="Educational Consultant">Educational Consultant</option>
+          <option value="School Principal">School Principal</option>
+          <option value="Training Specialist">Training Specialist</option>
+          <option value="Instructional Designer">Instructional Designer</option>
+          <option value="Academic Writer">Academic Writer</option>
+          <option value="Student Counselor">Student Counselor</option>
+          <option value="Education Administrator">Education Administrator</option>
+        </optgroup>
+        
+        <!-- Manufacturing & Operations -->
+        <optgroup label="Manufacturing & Operations">
+          <option value="Production Manager">Production Manager</option>
+          <option value="Operations Manager">Operations Manager</option>
+          <option value="Supply Chain Manager">Supply Chain Manager</option>
+          <option value="Quality Control Manager">Quality Control Manager</option>
+          <option value="Plant Manager">Plant Manager</option>
+          <option value="Maintenance Engineer">Maintenance Engineer</option>
+          <option value="Logistics Coordinator">Logistics Coordinator</option>
+          <option value="Procurement Specialist">Procurement Specialist</option>
+          <option value="Safety Manager">Safety Manager</option>
+          <option value="Lean Manufacturing Specialist">Lean Manufacturing Specialist</option>
+          <option value="Production Planner">Production Planner</option>
+          <option value="Warehouse Manager">Warehouse Manager</option>
+        </optgroup>
+        
+        <!-- Legal & Consulting -->
+        <optgroup label="Legal & Consulting">
+          <option value="Lawyer">Lawyer</option>
+          <option value="Legal Advisor">Legal Advisor</option>
+          <option value="Corporate Counsel">Corporate Counsel</option>
+          <option value="Paralegal">Paralegal</option>
+          <option value="Management Consultant">Management Consultant</option>
+          <option value="Business Analyst">Business Analyst</option>
+          <option value="Strategy Consultant">Strategy Consultant</option>
+          <option value="Legal Research Associate">Legal Research Associate</option>
+          <option value="Compliance Manager">Compliance Manager</option>
+          <option value="Contract Manager">Contract Manager</option>
+          <option value="Litigation Attorney">Litigation Attorney</option>
+          <option value="Tax Lawyer">Tax Lawyer</option>
+        </optgroup>
+        
+        <!-- Human Resources -->
+        <optgroup label="Human Resources">
+          <option value="HR Manager">HR Manager</option>
+          <option value="Talent Acquisition Specialist">Talent Acquisition Specialist</option>
+          <option value="HR Business Partner">HR Business Partner</option>
+          <option value="Compensation Analyst">Compensation Analyst</option>
+          <option value="Training & Development Manager">Training & Development Manager</option>
+          <option value="Employee Relations Specialist">Employee Relations Specialist</option>
+          <option value="HR Generalist">HR Generalist</option>
+          <option value="Recruiter">Recruiter</option>
+          <option value="Organizational Development Specialist">Organizational Development Specialist</option>
+          <option value="HR Analytics Specialist">HR Analytics Specialist</option>
+          <option value="Payroll Specialist">Payroll Specialist</option>
+          <option value="Benefits Administrator">Benefits Administrator</option>
+        </optgroup>
+        
+        <!-- Media & Creative -->
+        <optgroup label="Media & Creative">
+          <option value="Graphic Designer">Graphic Designer</option>
+          <option value="Content Writer">Content Writer</option>
+          <option value="Video Editor">Video Editor</option>
+          <option value="Photographer">Photographer</option>
+          <option value="UI/UX Designer">UI/UX Designer</option>
+          <option value="Creative Director">Creative Director</option>
+          <option value="Copywriter">Copywriter</option>
+          <option value="Journalist">Journalist</option>
+          <option value="Social Media Content Creator">Social Media Content Creator</option>
+          <option value="Art Director">Art Director</option>
+          <option value="Web Designer">Web Designer</option>
+          <option value="Motion Graphics Designer">Motion Graphics Designer</option>
+        </optgroup>
       </select>
     </div>
 
